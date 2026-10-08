@@ -14,17 +14,25 @@ namespace DvMod.Mph
 
     public static class MphSigns
     {
-        private static readonly HashSet<int> ConvertedTextIds = new HashSet<int>();
+        // A sign's TMP object is created before SignPlacer assigns its final
+        // number. Track the converted value rather than just the instance ID,
+        // so a later change from its default text to the actual limit is
+        // converted once, while repeated periodic scans remain idempotent.
+        private static readonly Dictionary<int, string> ConvertedTextValues = new Dictionary<int, string>();
+        private static int lastBaseSignCount = -1;
+        private static int lastSignDebugCount = -1;
 
-        // Static map signs retain the SignDebug component in B99, now provided by
-        // DV.SignPlacer. Their numeric TMP label is ready immediately after Awake.
+        // The permanent trackside boards are not all created by SignGenerator.
+        // Their text belongs to BaseSign; limiting the hook to sign components
+        // keeps HUD and menu text out of this conversion.
         [HarmonyPatch(typeof(TextMeshPro), "Awake")]
         public static class StaticSpeedSignsPatch
         {
             public static void Postfix(TextMeshPro __instance)
             {
-                if (__instance.GetComponentInParent<SignDebug>() != null)
-                    MphSigns.ConvertSpeedLimitText(__instance);
+                if (__instance.GetComponentInParent<BaseSign>() != null ||
+                    __instance.GetComponentInParent<SignDebug>() != null)
+                    ConvertSpeedLimitText(__instance);
             }
         }
 
@@ -53,7 +61,11 @@ namespace DvMod.Mph
                 signType == SignType.SpeedLimit ||
                 signType == SignType.SpeedLimitOld ||
                 signType == SignType.SpeedLimitYellow ||
-                signType == SignType.SpeedLimitYellowOld;
+                signType == SignType.SpeedLimitYellowOld ||
+                signType == SignType.UpcomingSpeedUp ||
+                signType == SignType.UpcomingSpeedUpOld ||
+                signType == SignType.UpcomingSpeedDown ||
+                signType == SignType.UpcomingSpeedDownOld;
 
             private static void SetSpeedLimitText(SignGenerator generator, int signIndex, int kmh)
             {
@@ -64,25 +76,73 @@ namespace DvMod.Mph
             }
         }
 
-        private static void ConvertSpeedLimitText(TextMeshPro text)
+        private static bool ConvertSpeedLimitText(TMP_Text text)
         {
-            if (!ConvertedTextIds.Contains(text.GetInstanceID()) && int.TryParse(text.text, out var kmh))
-                ConvertSpeedLimitText(text, kmh);
+            if (int.TryParse(text.text, out var speedSignValue))
+            {
+                var id = text.GetInstanceID();
+                if (ConvertedTextValues.TryGetValue(id, out var convertedValue) && convertedValue == text.text)
+                    return false;
+
+                ConvertSpeedLimitText(text, speedSignValue);
+                ConvertedTextValues[id] = text.text;
+                return true;
+            }
+
+            return false;
         }
 
-        private static void ConvertSpeedLimitText(TextMeshPro text, int kmh)
+        private static void ConvertSpeedLimitText(TMP_Text text, int kmh)
         {
             var mph = Mathf.RoundToInt(kmh * 10f / Constants.KmPerMile / 5) * 5;
             text.text = mph.ToString();
-            ConvertedTextIds.Add(text.GetInstanceID());
         }
 
+        // Existing map signs are already present when UMM enables this mod, so
+        // they do not necessarily pass through the creation-time patches above.
+        // BaseSign limits the scan to physical trackside signs, not menu/HUD text.
         public static void ConvertLoadedSigns()
         {
+            var baseSignCount = 0;
+            var signDebugCount = 0;
+            var textCount = 0;
+            var numericTextCount = 0;
+            var convertedCount = 0;
+
+            foreach (var sign in Object.FindObjectsOfType<BaseSign>())
+            {
+                baseSignCount++;
+                var text = sign.GetTextObject();
+                if (text != null)
+                {
+                    textCount++;
+                    if (int.TryParse(text.text, out _))
+                        numericTextCount++;
+                    if (ConvertSpeedLimitText(text))
+                        convertedCount++;
+                }
+            }
+
+            // Map-authored signs retain SignDebug rather than BaseSign in B99.
+            // This is intentionally separate from the BaseSign pass above.
             foreach (var sign in Object.FindObjectsOfType<SignDebug>())
             {
-                foreach (var text in sign.GetComponentsInChildren<TextMeshPro>(true))
-                    ConvertSpeedLimitText(text);
+                signDebugCount++;
+                foreach (var text in sign.GetComponentsInChildren<TMP_Text>(true))
+                {
+                    textCount++;
+                    if (int.TryParse(text.text, out _))
+                        numericTextCount++;
+                    if (ConvertSpeedLimitText(text))
+                        convertedCount++;
+                }
+            }
+
+            if (baseSignCount != lastBaseSignCount || signDebugCount != lastSignDebugCount || convertedCount > 0)
+            {
+                Main.DebugLog($"Build 99.7 sign scan: BaseSign={baseSignCount}, SignDebug={signDebugCount}, TMP={textCount}, numeric={numericTextCount}, converted={convertedCount}.");
+                lastBaseSignCount = baseSignCount;
+                lastSignDebugCount = signDebugCount;
             }
         }
     }

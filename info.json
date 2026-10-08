@@ -3,8 +3,8 @@
   "DisplayName": "Revised_MPH",
   "Author": "Zeibach",
   "Version": "0.0.1",
-  "AssemblyName": "Mph.dll",
+  "AssemblyName": "Revised_Mph.dll",
   "EntryMethod": "DvMod.Mph.Main.Load",
-  "HomePage": "https://www.nexusmods.com/derailvalley/mods/401",
-  "Repository": "https://raw.githubusercontent.com/matthewmaddox1993/Revised_MPH/refs/heads/main/repository.json"
+  "HomePage": "https://www.nexusmods.com/derailvalley/mods/1752",
+  "Repository": "https://raw.githubusercontent.com/matthewmaddox1993/Revised_MPH/main/repository.json"
 }

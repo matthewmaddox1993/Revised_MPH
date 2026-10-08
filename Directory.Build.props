@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <!-- A normal Rider Build Project uses Debug. Keep the distributable DLL in
+         the release folder so there is only one artifact to install. -->
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+    <OutputPath Condition="'$(Configuration)' == 'Debug'">bin\Release\</OutputPath>
+  </PropertyGroup>
+</Project>
