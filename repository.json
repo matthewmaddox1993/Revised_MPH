@@ -1,9 +1,6 @@
 {
-	"Releases": [
-		{
-			"Id": "Revised_Mph",
-			"Version": "0.0.1",
-			"DownloadUrl": "https://github.com/matthewmaddox1993/Revised_MPH/releases/download/Beta/Revised_Mph.zip"
-		}
-	]
+  "Releases":
+  [
+      {"Id": "Revised_Mph", "Version": "0.0.1", "DownloadUrl": "https://github.com/matthewmaddox1993/Revised_MPH/releases/download/v0.0.1/Revised_Mph.zip"}
+  ]
 }
