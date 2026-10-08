@@ -1,0 +1,55 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <RootNamespace>DvMod.Mph</RootNamespace>
+    <InformationalVersion>0.3.6</InformationalVersion>
+    <DerailValleyInstallPath Condition="'$(DerailValleyInstallPath)' == ''">D:\Games\Derail Valley</DerailValleyInstallPath>
+    <ManagedPath>$(DerailValleyInstallPath)\DerailValley_Data\Managed</ManagedPath>
+    <UnityModManagerPath>$(ManagedPath)\UnityModManager</UnityModManagerPath>
+    <AssemblyName>Revised_Mph</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0" PrivateAssets="all" /> -->
+  </ItemGroup>
+
+  <ItemDefinitionGroup>
+    <!-- The game and Unity Mod Manager provide these at runtime. -->
+    <Reference>
+      <Private>False</Private>
+    </Reference>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <Content Include="info.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+
+    <Reference Include="0Harmony">
+      <HintPath>$(UnityModManagerPath)\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(ManagedPath)\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="DV.SignPlacer">
+      <HintPath>$(ManagedPath)\DV.SignPlacer.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ManagedPath)\Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(ManagedPath)\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ManagedPath)\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ManagedPath)\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityModManager">
+      <HintPath>$(UnityModManagerPath)\UnityModManager.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

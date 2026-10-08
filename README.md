@@ -6,7 +6,7 @@ This project is a Build 99.7 compatibility revision of the original **MPH** mod 
 
 ## Build 99.7 support
 
-Version 0.3.5 supports Derail Valley Simulator Build 99.7.
+Version 0.0.1 supports Derail Valley Simulator Build 99.7.
 
 - Converts static and generated speed-limit signs from km/h to rounded mph.
 - Recalibrates locomotive speedometer needles to read against the dial scale in mph.
