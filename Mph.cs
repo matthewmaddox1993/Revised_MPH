@@ -14,13 +14,12 @@ namespace DvMod.Mph
 
     public static class MphSigns
     {
-        // A sign's TMP object is created before SignPlacer assigns its final
-        // number. Track the converted value rather than just the instance ID,
-        // so a later change from its default text to the actual limit is
-        // converted once, while repeated periodic scans remain idempotent.
+        // Sign text can be created before SignPlacer assigns its final number.
+        // Queue those few text objects and process them on the next frame rather
+        // than repeatedly scanning every object in the scene.
         private static readonly Dictionary<int, string> ConvertedTextValues = new Dictionary<int, string>();
-        private static int lastBaseSignCount = -1;
-        private static int lastSignDebugCount = -1;
+        private static readonly Queue<TMP_Text> PendingTexts = new Queue<TMP_Text>();
+        private static readonly HashSet<int> PendingTextIds = new HashSet<int>();
 
         // The permanent trackside boards are not all created by SignGenerator.
         // Their text belongs to BaseSign; limiting the hook to sign components
@@ -32,7 +31,7 @@ namespace DvMod.Mph
             {
                 if (__instance.GetComponentInParent<BaseSign>() != null ||
                     __instance.GetComponentInParent<SignDebug>() != null)
-                    ConvertSpeedLimitText(__instance);
+                    QueueText(__instance);
             }
         }
 
@@ -85,7 +84,6 @@ namespace DvMod.Mph
                     return false;
 
                 ConvertSpeedLimitText(text, speedSignValue);
-                ConvertedTextValues[id] = text.text;
                 return true;
             }
 
@@ -94,13 +92,37 @@ namespace DvMod.Mph
 
         private static void ConvertSpeedLimitText(TMP_Text text, int kmh)
         {
-            var mph = Mathf.RoundToInt(kmh * 10f / Constants.KmPerMile / 5) * 5;
-            text.text = mph.ToString();
+            var mph = Mathf.RoundToInt(kmh / Constants.KmPerMile / 5) * 5;
+            var convertedText = mph.ToString();
+            if (text.text != convertedText)
+                text.text = convertedText;
+            ConvertedTextValues[text.GetInstanceID()] = convertedText;
+        }
+
+        private static void QueueText(TMP_Text text)
+        {
+            var id = text.GetInstanceID();
+            if (PendingTextIds.Add(id))
+                PendingTexts.Enqueue(text);
+        }
+
+        // Called from the runner once per frame. The work is bounded so a burst
+        // of streamed signs cannot turn into a single large frame-time spike.
+        public static void ProcessPendingTexts(int maxTexts)
+        {
+            while (maxTexts-- > 0 && PendingTexts.Count > 0)
+            {
+                var text = PendingTexts.Dequeue();
+                PendingTextIds.Remove(text != null ? text.GetInstanceID() : 0);
+                if (text != null)
+                    ConvertSpeedLimitText(text);
+            }
         }
 
         // Existing map signs are already present when UMM enables this mod, so
         // they do not necessarily pass through the creation-time patches above.
-        // BaseSign limits the scan to physical trackside signs, not menu/HUD text.
+        // This full scan is intentionally only used at enable/scene-load time;
+        // streamed signs are handled by TextMeshPro.Awake and SignGenerator.
         public static void ConvertLoadedSigns()
         {
             var baseSignCount = 0;
@@ -138,12 +160,14 @@ namespace DvMod.Mph
                 }
             }
 
-            if (baseSignCount != lastBaseSignCount || signDebugCount != lastSignDebugCount || convertedCount > 0)
-            {
-                Main.DebugLog($"Build 99.7 sign scan: BaseSign={baseSignCount}, SignDebug={signDebugCount}, TMP={textCount}, numeric={numericTextCount}, converted={convertedCount}.");
-                lastBaseSignCount = baseSignCount;
-                lastSignDebugCount = signDebugCount;
-            }
+            Main.DebugLog($"Build 99.7 sign scan: BaseSign={baseSignCount}, SignDebug={signDebugCount}, TMP={textCount}, numeric={numericTextCount}, converted={convertedCount}.");
+        }
+
+        public static void Reset()
+        {
+            ConvertedTextValues.Clear();
+            PendingTexts.Clear();
+            PendingTextIds.Clear();
         }
     }
 

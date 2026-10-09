@@ -25,9 +25,10 @@ namespace DvMod.Mph
             var harmony = new Harmony(modEntry.Info.Id);
             if (value)
             {
+                harmony.PatchAll();
+                Mph.MphSigns.ConvertLoadedSigns();
                 EnsureSignConversionRunner();
                 SceneManager.sceneLoaded += OnSceneLoaded;
-                harmony.PatchAll();
                 DebugLog("Build 99.7 MPH conversion enabled.");
             }
             else
@@ -37,6 +38,7 @@ namespace DvMod.Mph
                 if (signConversionRunner != null)
                     Object.Destroy(signConversionRunner.gameObject);
                 signConversionRunner = null;
+                Mph.MphSigns.Reset();
             }
             return true;
         }
@@ -44,7 +46,6 @@ namespace DvMod.Mph
         private static void OnSceneLoaded(Scene _, LoadSceneMode __)
         {
             Mph.MphSigns.ConvertLoadedSigns();
-            signConversionRunner?.QueueScans();
         }
 
         private static void EnsureSignConversionRunner()
@@ -55,7 +56,6 @@ namespace DvMod.Mph
             var runnerObject = new GameObject("[Revised MPH sign conversion]");
             Object.DontDestroyOnLoad(runnerObject);
             signConversionRunner = runnerObject.AddComponent<SceneSignConversionRunner>();
-            signConversionRunner.QueueScans();
         }
 
         static public void DebugLog(string s)
@@ -66,25 +66,12 @@ namespace DvMod.Mph
 
     internal sealed class SceneSignConversionRunner : MonoBehaviour
     {
-        // B99 streams and populates map signs well after the initial scene-load
-        // event. A small periodic scan keeps late-created signs in sync without
-        // requiring the player to reload the mod in UMM.
-        private const float ScanIntervalSeconds = 5f;
-
-        private float nextScanAt;
-
-        public void QueueScans()
-        {
-            nextScanAt = 0f;
-        }
-
         private void Update()
         {
-            if (Time.unscaledTime < nextScanAt)
-                return;
-
-            Mph.MphSigns.ConvertLoadedSigns();
-            nextScanAt = Time.unscaledTime + ScanIntervalSeconds;
+            // B99 streams signs after sceneLoaded. TextMeshPro.Awake queues each
+            // sign text, and this bounded drain prevents a burst from causing a
+            // single frame-time spike.
+            Mph.MphSigns.ProcessPendingTexts(64);
         }
     }
 }
