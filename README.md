@@ -6,10 +6,11 @@ This project is a Build 99.7 compatibility revision of the original **MPH** mod 
 
 ## Build 99.7 support
 
-Version 0.0.1 supports Derail Valley Simulator Build 99.7.
+Version 0.0.3 supports Derail Valley Simulator Build 99.7.
 
-- Converts static and generated speed-limit signs from km/h to rounded mph.
+- Converts static and generated speed-limit signs from their tens-of-km/h values to rounded mph.
 - Recalibrates locomotive speedometer needles to read against the dial scale in mph.
+- Converts the shop Digital Speedometer and digital speed indicators on Custom Car Loader 3.x and other modded locomotives.
 - Supports the standard locomotives and Custom Car Loader 3.x locomotives that expose a `LocoIndicatorReader` speed gauge.
 - Supports normal, yellow, and legacy speed-limit sign variants.
 
@@ -29,6 +30,20 @@ The number markings and `km/h` label on locomotive speedometer faces are baked i
 4. Fully restart Derail Valley.
 
 The release output is located at `bin\Release\netstandard2.0` after building the project.
+The Release build also creates `Revised_Mph-<Version>.zip`, using the `Version`
+from `info.json`; the archive contains the installable DLL and `info.json`.
+
+## Changelog
+
+### 0.0.3
+
+- Fixed speed-limit sign conversion by interpreting each sign value as tens of km/h before converting to rounded mph. This prevents lower speed limits from incorrectly displaying as 0 mph.
+
+### 0.0.2
+
+- Added compatibility with Derail Valley Simulator Build 99.7.
+- Added conversion for static and generated speed-limit signs, locomotive speedometers, and supported digital speed displays.
+- Added support for standard locomotives, Custom Car Loader 3.x locomotives, and normal, yellow, and legacy speed-limit sign variants.
 
 ## Building from source
 
