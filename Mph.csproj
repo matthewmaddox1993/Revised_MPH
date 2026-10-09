@@ -4,7 +4,7 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>DvMod.Mph</RootNamespace>
-    <InformationalVersion>0.0.1</InformationalVersion>
+    <InformationalVersion>0.0.3</InformationalVersion>
     <DerailValleyInstallPath Condition="'$(DerailValleyInstallPath)' == ''">D:\Games\Derail Valley</DerailValleyInstallPath>
     <ManagedPath>$(DerailValleyInstallPath)\DerailValley_Data\Managed</ManagedPath>
     <UnityModManagerPath>$(ManagedPath)\UnityModManager</UnityModManagerPath>
@@ -52,4 +52,29 @@
       <HintPath>$(UnityModManagerPath)\UnityModManager.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+  <Target Name="CreateReleasePackage" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <!-- Read the package version from the same info.json that is shipped with the mod. -->
+    <ReadLinesFromFile File="$(MSBuildProjectDirectory)\info.json">
+      <Output TaskParameter="Lines" ItemName="_InfoJsonLines" />
+    </ReadLinesFromFile>
+
+    <PropertyGroup>
+      <InfoJsonText>@(_InfoJsonLines)</InfoJsonText>
+      <PackageVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(InfoJsonText)', '.*Version[^0-9]*([0-9][0-9A-Za-z.+-]*).*', '$1'))</PackageVersion>
+      <ReleasePackagePath>$(TargetDir)$(AssemblyName)-$(PackageVersion).zip</ReleasePackagePath>
+      <ReleasePackageStagingDirectory>$(IntermediateOutputPath)release-package\</ReleasePackageStagingDirectory>
+    </PropertyGroup>
+
+    <Error Condition="'$(PackageVersion)' == ''" Text="Could not read Version from info.json." />
+
+    <!-- Stage only the files that belong in the installable mod package. -->
+    <RemoveDir Directories="$(ReleasePackageStagingDirectory)" />
+    <MakeDir Directories="$(ReleasePackageStagingDirectory)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ReleasePackageStagingDirectory)" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\info.json" DestinationFolder="$(ReleasePackageStagingDirectory)" />
+    <ZipDirectory SourceDirectory="$(ReleasePackageStagingDirectory)" DestinationFile="$(ReleasePackagePath)" Overwrite="true" />
+
+    <Message Importance="High" Text="Created release package: $(ReleasePackagePath)" />
+  </Target>
 </Project>
