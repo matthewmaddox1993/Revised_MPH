@@ -28,12 +28,10 @@ namespace DvMod.Mph
                 harmony.PatchAll();
                 Mph.MphSigns.ConvertLoadedSigns();
                 EnsureSignConversionRunner();
-                SceneManager.sceneLoaded += OnSceneLoaded;
                 DebugLog("Build 99.7 MPH conversion enabled.");
             }
             else
             {
-                SceneManager.sceneLoaded -= OnSceneLoaded;
                 harmony.UnpatchAll(modEntry.Info.Id);
                 if (signConversionRunner != null)
                     Object.Destroy(signConversionRunner.gameObject);
@@ -41,11 +39,6 @@ namespace DvMod.Mph
                 Mph.MphSigns.Reset();
             }
             return true;
-        }
-
-        private static void OnSceneLoaded(Scene _, LoadSceneMode __)
-        {
-            Mph.MphSigns.ConvertLoadedSigns();
         }
 
         private static void EnsureSignConversionRunner()
@@ -68,10 +61,10 @@ namespace DvMod.Mph
     {
         private void Update()
         {
-            // B99 streams signs after sceneLoaded. TextMeshPro.Awake queues each
-            // sign text, and this bounded drain prevents a burst from causing a
-            // single frame-time spike.
-            Mph.MphSigns.ProcessPendingTexts(64);
+            // B99 streams signs as the player moves. TextMeshPro.Awake queues each
+            // sign text, and this time-bounded drain prevents a burst from causing
+            // a single frame-time spike.
+            Mph.MphSigns.ProcessPendingTexts(0.75);
         }
     }
 }

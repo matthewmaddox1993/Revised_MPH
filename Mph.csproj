@@ -4,7 +4,7 @@
     <LangVersion>8.0</LangVersion>
     <Nullable>enable</Nullable>
     <RootNamespace>DvMod.Mph</RootNamespace>
-    <InformationalVersion>0.0.3</InformationalVersion>
+    <InformationalVersion>0.0.4</InformationalVersion>
     <DerailValleyInstallPath Condition="'$(DerailValleyInstallPath)' == ''">D:\Games\Derail Valley</DerailValleyInstallPath>
     <ManagedPath>$(DerailValleyInstallPath)\DerailValley_Data\Managed</ManagedPath>
     <UnityModManagerPath>$(ManagedPath)\UnityModManager</UnityModManagerPath>

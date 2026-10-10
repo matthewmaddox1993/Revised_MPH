@@ -4,6 +4,7 @@ using DV.Customization.Gadgets.Implementations;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using TMPro;
@@ -32,11 +33,12 @@ namespace DvMod.Mph
         [HarmonyPatch(typeof(TextMeshPro), "Awake")]
         public static class StaticSpeedSignsPatch
         {
+            // Keep this hook as cheap as possible: it runs for every TextMeshPro
+            // in the game. The parent-hierarchy check is deferred to the budgeted
+            // queue drain, where it only runs for numeric text.
             public static void Postfix(TextMeshPro __instance)
             {
-                if (__instance.GetComponentInParent<BaseSign>() != null ||
-                    __instance.GetComponentInParent<SignDebug>() != null)
-                    QueueText(__instance);
+                QueueText(__instance);
             }
         }
 
@@ -114,18 +116,33 @@ namespace DvMod.Mph
                 PendingTexts.Enqueue(text);
         }
 
-        // Called from the runner once per frame. The work is bounded so a burst
-        // of streamed signs cannot turn into a single large frame-time spike.
-        public static void ProcessPendingTexts(int maxTexts)
+        // Called from the runner once per frame. The work is bounded by a time
+        // budget so a burst of streamed signs cannot turn into a single large
+        // frame-time spike. Remaining texts are simply handled on later frames.
+        public static void ProcessPendingTexts(double budgetMilliseconds)
         {
-            while (maxTexts-- > 0 && PendingTexts.Count > 0)
+            if (PendingTexts.Count == 0)
+                return;
+
+            var stopwatch = Stopwatch.StartNew();
+            while (PendingTexts.Count > 0)
             {
                 var text = PendingTexts.Dequeue();
                 PendingTextIds.Remove(text != null ? text.GetInstanceID() : 0);
-                if (text != null)
+                if (text != null && IsSignText(text))
                     ConvertSpeedLimitText(text);
+
+                if (stopwatch.Elapsed.TotalMilliseconds >= budgetMilliseconds)
+                    break;
             }
         }
+
+        // Cheap numeric test first; only numeric text pays for the hierarchy walk.
+        private static bool IsSignText(TMP_Text text) =>
+            int.TryParse(text.text, out _) &&
+            (text.GetComponentInParent<BaseSign>() != null ||
+             text.GetComponentInParent<SignDebug>() != null);
+
 
         // Existing map signs are already present when UMM enables this mod, so
         // they do not necessarily pass through the creation-time patches above.

@@ -2,7 +2,7 @@
   "Id": "Revised_Mph",
   "DisplayName": "Revised_MPH",
   "Author": "Zeibach",
-  "Version": "0.0.3",
+  "Version": "0.0.4",
   "AssemblyName": "Revised_Mph.dll",
   "EntryMethod": "DvMod.Mph.Main.Load",
   "HomePage": "https://www.nexusmods.com/derailvalley/mods/1752",
